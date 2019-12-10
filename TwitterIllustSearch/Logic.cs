@@ -14,6 +14,8 @@ namespace TwitterIllustSearch
 {
     public class Logic
     {
+        private string baseDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+
         private string keyword = ConfigurationManager.AppSettings["keyword"] 
                                 + " min_faves:" + ConfigurationManager.AppSettings["min_faves"];
 
@@ -49,10 +51,10 @@ namespace TwitterIllustSearch
                     this.PostDiscord($"@{tweet.User.ScreenName} {tweet.CreatedAt} : {LinkToTweet}");
 
                     // 2枚目以降のイラストをPost
-                    for (int i = 1; i < tweet.ExtendedEntities.Media.Length; i++)
-                    {
-                        this.PostDiscord(tweet.ExtendedEntities.Media[i].MediaUrlHttps);
-                    }
+                    //for (int i = 1; i < tweet.ExtendedEntities.Media.Length; i++)
+                    //{
+                    //    this.PostDiscord(tweet.ExtendedEntities.Media[i].MediaUrlHttps);
+                    //}
 
                     // いいねに追加
                     // tokens.Favorites.Create(id => tweet.Id);
@@ -61,7 +63,7 @@ namespace TwitterIllustSearch
                     this.InsertTweetId(tweet.Id);
 
                     // ログのようなもの
-                    File.AppendAllText(Directory.GetCurrentDirectory() + @"\log.txt", LinkToTweet + "\n");
+                    File.AppendAllText(baseDirectory + @"\log.txt", LinkToTweet + "\n");
                 }
 
             }
@@ -97,7 +99,7 @@ namespace TwitterIllustSearch
 
         private bool IsExistDb(long tweetId)
         {
-            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{Directory.GetCurrentDirectory()}\\postedToDiscord.db" };
+            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{baseDirectory}\\postedToDiscord.db" };
 
             using (var cn = new SQLiteConnection(sqlConnectionSb.ToString()))
             {
@@ -122,7 +124,7 @@ namespace TwitterIllustSearch
 
         private int InsertTweetId(long tweetId)
         {
-            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{Directory.GetCurrentDirectory()}\\postedToDiscord.db" };
+            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{baseDirectory}\\postedToDiscord.db" };
 
             using (var cn = new SQLiteConnection(sqlConnectionSb.ToString()))
             {
