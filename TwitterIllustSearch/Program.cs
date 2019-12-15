@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.IO;
 
 namespace TwitterIllustSearch
@@ -15,7 +16,8 @@ namespace TwitterIllustSearch
             }
             catch (Exception e)
             {
-                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\') + @"\log.txt", e.Message + "\n");
+                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\') 
+                    + @"\" + ConfigurationManager.AppSettings["LogFileName"], e.Message + "\n");
             }
         }
     }
