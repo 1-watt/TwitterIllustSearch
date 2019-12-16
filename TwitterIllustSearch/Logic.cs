@@ -29,6 +29,8 @@ namespace TwitterIllustSearch
         private string keyword = ConfigurationManager.AppSettings["keyword"] 
                                 + " min_faves:" + ConfigurationManager.AppSettings["min_faves"];
 
+        private int min_retweets = Convert.ToInt32(ConfigurationManager.AppSettings["min_retweets"]);
+
         private int fooCount = Convert.ToInt32(ConfigurationManager.AppSettings["fooCount"]);
 
         private string[] ngWordsProfile = ConfigurationManager.AppSettings["ngWordsProfile"].Split(',');
@@ -50,7 +52,8 @@ namespace TwitterIllustSearch
             var tokens = Tokens.Create(Key.APIKey, Key.APISecret, Key.AccessToken, Key.AccessSecret);
 
             var result = tokens.Search.Tweets(count => fooCount, q => keyword)
-                            .Where(tw => tw.Entities.Media != null && tw.ExtendedEntities.Media[0].Type == "photo");
+                            .Where(tw => tw.Entities.Media != null && tw.ExtendedEntities.Media[0].Type == "photo"
+                                    && tw.RetweetCount > min_retweets);
 
             foreach (var tweet in result)
             {
