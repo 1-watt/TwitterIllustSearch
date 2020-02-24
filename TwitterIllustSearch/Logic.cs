@@ -26,8 +26,9 @@ namespace TwitterIllustSearch
 
         private string LogFileName = ConfigurationManager.AppSettings["LogFileName"];
 
-        private string keyword = ConfigurationManager.AppSettings["keyword"] 
-                                + " min_faves:" + ConfigurationManager.AppSettings["min_faves"];
+        private string keyword = ConfigurationManager.AppSettings["keyword"];
+
+        private int min_faves = Convert.ToInt32(ConfigurationManager.AppSettings["min_faves"]);
 
         private int min_retweets = Convert.ToInt32(ConfigurationManager.AppSettings["min_retweets"]);
 
@@ -51,9 +52,9 @@ namespace TwitterIllustSearch
 
             var tokens = Tokens.Create(Key.APIKey, Key.APISecret, Key.AccessToken, Key.AccessSecret);
 
-            var result = tokens.Search.Tweets(count => fooCount, q => keyword)
-                            .Where(tw => tw.Entities.Media != null && tw.ExtendedEntities.Media[0].Type == "photo"
-                                    && tw.RetweetCount > min_retweets);
+            string query = $"\"{keyword}\" min_faves:{min_faves} min_retweets:{min_retweets} filter:images -\"#{keyword}\"";
+
+            var result = tokens.Search.Tweets(count => fooCount, q => query);
 
             foreach (var tweet in result)
             {
@@ -65,13 +66,17 @@ namespace TwitterIllustSearch
                 {
                     string LinkToTweet = $"https://twitter.com/{tweet.User.ScreenName}/status/{tweet.Id}";
 
-                    this.PostDiscord($"@{tweet.User.ScreenName} {tweet.CreatedAt} : {LinkToTweet}");
+                    StringBuilder sb = new StringBuilder();
 
-                    // 2枚目以降のイラストをPost
-                    //for (int i = 1; i < tweet.ExtendedEntities.Media.Length; i++)
-                    //{
-                    //    this.PostDiscord(tweet.ExtendedEntities.Media[i].MediaUrlHttps);
-                    //}
+                    sb.Append($"@{tweet.User.ScreenName} {tweet.CreatedAt} : {LinkToTweet}");
+
+                    // 2枚目以降のイラスト
+                    for (int i = 1; i < tweet.ExtendedEntities.Media.Length; i++)
+                    {
+                        sb.Append(@"\n").Append(tweet.ExtendedEntities.Media[i].MediaUrlHttps);
+                    }
+
+                    this.PostDiscord(sb.ToString());
 
                     // いいねに追加
                     // tokens.Favorites.Create(id => tweet.Id);
@@ -119,6 +124,11 @@ namespace TwitterIllustSearch
             }
         }
 
+        /// <summary>
+        /// DBに存在するかどうか
+        /// </summary>
+        /// <param name="tweetId"></param>
+        /// <returns></returns>
         private bool IsExistDb(long tweetId)
         {
             var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{baseDirectory}\\{DbFileName}" };
@@ -144,6 +154,11 @@ namespace TwitterIllustSearch
             }
         }
 
+        /// <summary>
+        /// DBにツイートIDを追加
+        /// </summary>
+        /// <param name="tweetId"></param>
+        /// <returns></returns>
         private int InsertTweetId(long tweetId)
         {
             var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{baseDirectory}\\{DbFileName}" };
