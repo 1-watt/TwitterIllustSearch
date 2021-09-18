@@ -7,54 +7,32 @@ using System.Net;
 using System.Data;
 using System.Net.Http;
 using System.IO;
-using System.Configuration;
 using System.Data.SQLite;
+using System.Text.Json;
 
 namespace TwitterIllustSearch
 {
-    struct ImageSize
-    {
-        public int w;
-        public int h;
-    }
-
     public class Logic
     {
-        private string baseDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
-
-        private string DbFileName = ConfigurationManager.AppSettings["DbFileName"];
-
-        private string LogFileName = ConfigurationManager.AppSettings["LogFileName"];
-
-        private string keyword = ConfigurationManager.AppSettings["keyword"];
-
-        private int min_faves = Convert.ToInt32(ConfigurationManager.AppSettings["min_faves"]);
-
-        private int min_retweets = Convert.ToInt32(ConfigurationManager.AppSettings["min_retweets"]);
-
-        private int fooCount = Convert.ToInt32(ConfigurationManager.AppSettings["fooCount"]);
-
-        private string[] ngWordsProfile = ConfigurationManager.AppSettings["ngWordsProfile"].Split(',');
-
-        private string[] ngWords = ConfigurationManager.AppSettings["ngWords"].Split(',');
-
-        private string[] ngScreenName = ConfigurationManager.AppSettings["ngScreenName"].Split(',');
-
-        private IEnumerable<ImageSize> ngImageSize = ConfigurationManager.AppSettings["ngImageSize"].Split(',')
-            .Select(wh => new ImageSize{w = Convert.ToInt32(wh.Split('*')[0]), h = Convert.ToInt32(wh.Split('*')[1])});
+        /// <summary>
+        /// 設定
+        /// </summary>
+        private Config config;
 
         /// <summary>
         /// メインの処理
         /// </summary>
         public void IllustSearch()
         {
+            config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Config.json")));
+
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
-            var tokens = Tokens.Create(Key.APIKey, Key.APISecret, Key.AccessToken, Key.AccessSecret);
+            var tokens = Tokens.Create(config.TwitterAPI.APIKey, config.TwitterAPI.APISecret, config.TwitterAPI.AccessToken, config.TwitterAPI.AccessSecret);
 
-            string query = $"\"{keyword}\" min_faves:{min_faves} min_retweets:{min_retweets} filter:images -\"#{keyword}\"";
+            string query = $"\"{config.keyword}\" min_faves:{config.min_faves} min_retweets:{config.min_retweets} filter:images -\"#{config.keyword}\"";
 
-            var result = tokens.Search.Tweets(count => fooCount, q => query);
+            var result = tokens.Search.Tweets(count => config.fooCount, q => query);
 
             foreach (var tweet in result)
             {
@@ -73,7 +51,7 @@ namespace TwitterIllustSearch
                     // 2枚目以降のイラスト
                     for (int i = 1; i < tweet.ExtendedEntities.Media.Length; i++)
                     {
-                        sb.Append(@"\n").Append(tweet.ExtendedEntities.Media[i].MediaUrlHttps);
+                        sb.AppendLine().Append(tweet.ExtendedEntities.Media[i].MediaUrlHttps);
                     }
 
                     this.PostDiscord(sb.ToString());
@@ -85,9 +63,8 @@ namespace TwitterIllustSearch
                     this.InsertTweetId(tweet.Id);
 
                     // ログのようなもの
-                    File.AppendAllText($"{baseDirectory}\\{LogFileName}", LinkToTweet + "\n");
+                    File.AppendAllText(Path.Combine(AppContext.BaseDirectory, config.LogFileName), LinkToTweet + Environment.NewLine);
                 }
-
             }
         }
 
@@ -101,10 +78,10 @@ namespace TwitterIllustSearch
             // 16:9のアスペクト比
             double ngAspectRatio_16_9 = 1.77;
 
-            return !ngWords.Any(wd => tweet.Text.Contains(wd)) 
-                && !ngWordsProfile.Any(wd => tweet.User.Description.Contains(wd))
-                && !ngScreenName.Any(Id => tweet.User.ScreenName == Id)
-                && !ngImageSize.Any(size => tweet.ExtendedEntities.Media.Any(media => media.Sizes.Large.Width == size.w && media.Sizes.Large.Height == size.h))
+            return !config.ngWords.Any(wd => tweet.Text.Contains(wd)) 
+                && !config.ngWordsProfile.Any(wd => tweet.User.Description.Contains(wd))
+                && !config.ngScreenName.Any(Id => tweet.User.ScreenName == Id)
+                && !config.ngImageSize.Any(size => tweet.ExtendedEntities.Media.Any(media => media.Sizes.Large.Width == size.w && media.Sizes.Large.Height == size.h))
                 && !tweet.ExtendedEntities.Media.Any(media => Math.Floor((double)media.Sizes.Large.Width / (double)media.Sizes.Large.Height * 100) / 100 == ngAspectRatio_16_9);
         }
 
@@ -119,7 +96,7 @@ namespace TwitterIllustSearch
 
             using (var client = new HttpClient())
             {
-                var response = client.PostAsync(Key.WebHookURL, content).GetAwaiter();
+                var response = client.PostAsync(config.WebHookURL, content).GetAwaiter();
                 response.GetResult();
             }
         }
@@ -131,7 +108,7 @@ namespace TwitterIllustSearch
         /// <returns></returns>
         private bool IsExistDb(long tweetId)
         {
-            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{baseDirectory}\\{DbFileName}" };
+            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = Path.Combine(AppContext.BaseDirectory, config.DbFileName) };
 
             using (var cn = new SQLiteConnection(sqlConnectionSb.ToString()))
             {
@@ -161,7 +138,7 @@ namespace TwitterIllustSearch
         /// <returns></returns>
         private int InsertTweetId(long tweetId)
         {
-            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = $"{baseDirectory}\\{DbFileName}" };
+            var sqlConnectionSb = new SQLiteConnectionStringBuilder { DataSource = Path.Combine(AppContext.BaseDirectory, config.DbFileName) };
 
             using (var cn = new SQLiteConnection(sqlConnectionSb.ToString()))
             {

@@ -16,9 +16,9 @@ namespace TwitterIllustSearch
             }
             catch (Exception e)
             {
-                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\') 
-                    + @"\" + ConfigurationManager.AppSettings["LogFileName"], e.Message + "\n");
+                File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "ExceptionLog.txt"), e.ToString() + Environment.NewLine);
+                Console.WriteLine(e.ToString());
             }
-        }
+}
     }
 }

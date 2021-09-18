@@ -1,0 +1,48 @@
+{
+    "TwitterAPI": {
+        "APIKey": "",
+        "APISecret": "",
+        "AccessToken": "",
+        "AccessSecret": ""
+    },
+    "WebHookURL": "https://discordapp.com/api/webhooks/XXXXXXXX",
+    "DbFileName": "log.db",
+    "LogFileName": "log.txt",
+    "keyword": "凛世",
+    "min_faves": 100,
+    "fooCount": 50,
+    "min_retweets": 30,
+    "ngWordsProfile": [
+        "コスプレ",
+        "こすぷれ",
+        "Cosplay",
+        "cosplay"
+    ],
+    "ngWords": [
+        "コスプレ",
+        "こすぷれ",
+        "Cosplay",
+        "cosplay",
+        "フォロー",
+        "フォロバ",
+        "痛車"
+    ],
+    "ngScreenName": [
+        "_shinycolors_",
+        "imassc_official",
+        "imas_official",
+        "asobistore",
+        "imas_DB",
+        "imas_tsushin",
+        "morinorinze1019"
+    ],
+    "ngImageSize": [
+        {"w": 2048, "h": 946},
+        {"w": 2048, "h": 996},
+        {"w": 1024, "h": 473},
+        {"w": 1792, "h": 828},
+        {"w": 2048, "h": 1024},
+        {"w": 2048, "h": 1152},
+        {"w": 2048, "h": 1106}
+    ]
+}
